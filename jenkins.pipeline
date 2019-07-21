@@ -1,0 +1,27 @@
+node {
+    def image_name = params.docker_hub_login + "/" + params.image_name
+    def image
+    stage('Clone repository') {
+        git url: 'https://github.com/kamura1/nginxlb.git'
+
+    }
+
+    stage('Build image') {
+        image = docker.build(image_name)
+    }
+
+    stage('Test image') {
+        image.withRun("-d") { c ->
+            sh "docker exec ${c.id} nginx -t"
+        }
+
+    }
+
+    stage('Push image to Docker Hub') {
+        //docker.withRegistry('https://registry.hub.docker.com', 'credentials-for-docker-hub') {
+        docker.withRegistry('https://registry.hub.docker.com', params['credentials-for-docker-hub']) {
+            image.push("latest")
+        }
+    }
+
+}
